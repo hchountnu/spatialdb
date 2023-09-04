@@ -9,8 +9,8 @@
 因此table名稱，由*schema.table*改為*schema_table*
 
 
-## UML Class
-![UML class ](https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.png)
+## Entity-Relationship Diagram
+![Entity-Relationship Diagram](https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.png)
 
 
 $ SQL SELECT 語法
