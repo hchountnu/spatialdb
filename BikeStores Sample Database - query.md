@@ -10,12 +10,14 @@
 
 
 ## Entity-Relationship Diagram
-![Entity-Relationship Diagram](https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.png)
+![UML class ](https://www.sqlservertutorial.net/wp-content/uploads/SQL-Server-Sample-Database.png)
 
 
-$ SQL SELECT 語法
-- [SQite SELECT ](https://www.sqlite.org/lang_select.html)
-- [PostgresSQL SELECT](https://docs.postgresql.tw/reference/sql-commands/select)
+# SQL SELECT 語法
+- [SQite SELECT 語法](https://www.sqlite.org/lang_select.html)
+- [PostgresSQL SELECT 語法](https://docs.postgresql.tw/reference/sql-commands/select)
+  - [PostgresSQL SELECT 教學](https://docs.postgresql.tw/reference/sql-commands/select)
+
 
 ## SELECT
  https://www.sqlservertutorial.net/sql-server-basics/sql-server-select/
@@ -525,8 +527,9 @@ WHERE
 	
 ```
 
-## HAVING
+### HAVING
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-having/
+使用於 GROUP BY 的子語句。對GROUP BY 後結果，進行挑選。
 
 ```SQL
 SELECT
@@ -574,10 +577,11 @@ HAVING
     AVG (list_price) BETWEEN 500 AND 1000;
 ```
 
-# grouping set
+### grouping set
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-grouping-sets/
 
-便捷執行多種gouping方式組合。, 相當將多個group by 查詢後 UNION ALL 一起。  
+使用於 GROUP BY 的子語句.
+便於快捷執行多種gouping方式組合。, 相當將多個group by 查詢後 UNION ALL 一起。  
 SQLite不支援。
 
 
@@ -711,14 +715,15 @@ SELECT
     SUM (sales)
 FROM
     sales_sales_summary
-ORDER BY brand, category;
+ORDER BY brand, 
+         category;
 ```
 
 
-## CUBE
+### CUBE
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-cube/
 
-便捷執行所有可能gouping方式的組合，相當將多個group by 查詢後 UNION ALL 一起。  
+使用於 GROUP BY 的子語句。便捷執行所有可能gouping方式的組合，相當將多個group by 查詢後 UNION ALL 一起。  
 SQlite不支援.
 
 CUBE(brand, category)產生4種grouping
@@ -738,9 +743,10 @@ GROUP BY
 ```
 
 
-## ROLLUP
+### ROLLUP
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-rollup/  
-層次的gouping, ROLLUP(brand, category)產生3種grouping
+
+使用於 GROUP BY 的子語句。層次的gouping, ROLLUP(brand, category)產生3種grouping
 1. (brand, category)
 1. (brand)
 1. ()
@@ -758,8 +764,11 @@ GROUP BY
     ROLLUP(brand, category);
 ```
 
-## subguery
-https://www.sqlservertutorial.net/sql-server-basics/sql-server-subquery/
+## subguery 子查詢
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-subquery/  
+
+查尋內有子查尋。
+子查尋的結果為表格。所有理論上可以用在，使用TABLE作為參數的位置。常配合**IN**、**ANY**、**ALL**、**EXITS**等SQL關鍵詞使用。
 
 ```SQL
 SELECT
@@ -767,9 +776,9 @@ SELECT
     order_date,
     customer_id
 FROM
-    sales_orders
+    sales_orders  -- outter query 
 WHERE
-    customer_id IN (  -- subquery 傳 records
+    customer_id IN (  -- subquery 
         SELECT
             customer_id
         FROM
@@ -779,4 +788,432 @@ WHERE
     )
 ORDER BY
     order_date DESC;
+```
+
+**Nesting subquery  巢狀子查尋**  
+以下找出產品價格大於 Strdeer 及 Trek 兩品牌所有產品的平均價格的產品。
+```SQL
+
+SELECT
+    product_name,
+    list_price
+FROM
+    production_products
+WHERE
+    list_price > (
+        SELECT
+            AVG (list_price)
+        FROM
+            production_products
+        WHERE
+            brand_id IN (
+                SELECT
+                    brand_id
+                FROM
+                    production_brands
+                WHERE
+                    brand_name = 'Strider'
+                OR brand_name = 'Trek'
+            )
+    )
+ORDER BY
+    list_price;
+```
+
+前面說明 GROUPING SET, CUBE, ROLLUP 時，先產生 sales_sales_summary 表格，然後再進行查尋，但可以將產生 sales_sales_summary 的 SQL 作為子查詢。
+
+```SQL
+SELECT
+    brand,
+    category,
+    SUM (sales) sales
+FROM
+    (  -- 產生 sales_sales_summary 的子查詢
+    SELECT
+    b.brand_name AS brand,
+    c.category_name AS category,
+    p.model_year,
+    round(
+        SUM ( quantity * i.list_price * (1 - discount)),0
+	) sales
+   FROM
+    sales_order_items i
+   INNER JOIN production_products p ON p.product_id = i.product_id
+   INNER JOIN production_brands b ON b.brand_id = p.brand_id
+   INNER JOIN production_categories c ON c.category_id = p.category_id
+   GROUP BY
+      b.brand_name,
+      c.category_name,
+      p.model_year
+   ORDER BY
+      b.brand_name,
+      c.category_name,
+      p.model_year
+    ) sales_sales_summary
+GROUP BY
+    CUBE(brand, category);
+
+```
+
+### EXISTS
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-exists/  
+
+EXISTS 運算符是一個邏輯運算符，可讓檢查**子查詢**是否返回任何行。果子查詢返回一行或多行，則 EXISTS 運算符返回 TRUE
+
+```SQL
+SELECT
+    customer_id,
+    first_name,
+    last_name
+FROM
+    sales_customers c
+WHERE
+    EXISTS (　-- 檢查 sales_customers C 的每一筆資料　　
+        SELECT
+            COUNT (*)
+        FROM
+            sales_orders o
+        WHERE
+            customer_id = c.customer_id -- 隱含的INNER　JOIN
+        GROUP BY
+            customer_id
+        HAVING
+            COUNT (*) > 2
+    )
+ORDER BY
+    first_name,
+    last_name;
+```
+
+下面SQL不使用EXIT，使用 INNER JOIN ;結果和使用EXIT的SQL相同
+```SQL
+SELECT
+    c.customer_id,
+    first_name,
+    last_name,
+    COUNT (*) orders
+FROM
+    sales_customers c
+INNER JOIN    
+    sales_orders o 
+  ON
+    o.customer_id = c.customer_id
+GROUP BY
+    o.customer_id
+  HAVING
+    COUNT (*) > 2
+ORDER BY
+    first_name,
+    last_name;
+```
+
+### ANY
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-any/  
+
+ANY運算符是一個邏輯運算符，**子查詢**必須產生只一個欄位的返回值。如果該返回欄位任一值滿足條件即可為真。
+
+```SQL
+SELECT
+    product_name,
+    list_price
+FROM
+    production_products
+WHERE
+    product_id = ANY (
+        SELECT
+            product_id
+        FROM
+            sales_order_items
+        WHERE
+            quantity >= 2
+    )
+ORDER BY
+    product_name;
+```
+
+SQLIte 不支援 ANY，用 IN
+
+```SQL
+SELECT
+    product_name,
+    list_price
+FROM
+    production_products
+WHERE
+    product_id IN (
+        SELECT
+            product_id
+        FROM
+            sales_order_items
+        WHERE
+            quantity >= 2
+    )
+ORDER BY
+    product_name;
+```
+
+### ALL
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-all/  
+
+ANY運算符是一個邏輯運算符，**子查詢**必須產生只一個欄位的返回值。如果該返回欄位所有的值均滿足條件即可為真。
+
+以下查詢，列出大於每個品牌產品平均值的產品
+```SQL
+SELECT
+    product_name,
+    list_price
+FROM
+    production_products
+WHERE
+    list_price > ALL (
+        SELECT
+            AVG (list_price) avg_list_price
+        FROM
+            production_products
+        GROUP BY
+            brand_id
+    )
+ORDER BY
+    list_price;
+```
+
+## UNION
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-union/  
+
+兩個查詢結果的聯集,兩查詢結果必須的欄位必須同樣類型。兩查詢有相同紀錄時，僅會保留一個。
+
+以下查詢有中客戶中有兩筆同first_name及last_name,因此僅保留一筆。
+```SQL
+SELECT
+    first_name,
+    last_name
+FROM
+    sales_staffs
+UNION
+SELECT
+    first_name,
+    last_name
+FROM
+    sales_customers;
+```
+UNION ALL 重複的紀錄將會保留。
+```SQL
+SELECT
+    first_name,
+    last_name
+FROM
+    sales_staffs
+UNION ALL
+SELECT
+    first_name,
+    last_name
+FROM
+    sales_customers;
+```
+
+## INTERSET
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-intersect/  
+
+
+兩個查詢結果的交集,兩查詢結果必須的欄位必須同樣類型。
+
+選擇有店及客戶的城市
+```SQL
+SELECT
+    city
+FROM
+    sales_customers
+INTERSECT
+SELECT
+    city
+FROM
+    sales_stores
+ORDER BY
+    city;
+```
+
+## EXCEPT
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-except/  
+
+兩個查詢結果的交集,兩查詢結果必須的欄位必須同樣類型。
+
+哪些產品沒有訂單
+```SQL
+SELECT
+    product_id
+FROM
+    production_products
+EXCEPT
+SELECT
+    product_id
+FROM
+    sales_order_items
+ORDER BY 
+	product_id;
+```
+
+## CTE (Common Table Expression)
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-cte/  
+
+CTE  (Common Table Expression) 允許定義臨時命名結果集，該結果集在 SELECT、INSERT、UPDATE、DELETE等語句的執行範圍內臨時可用。
+
+語法如下
+```SQL
+WITH expression_name[(column_name [,...])]
+AS
+    (CTE_definition)
+SQL_statement;
+```
+
+以下查詢先產生cte_sales_amounts- 每個員工歷年的銷售額，然後查詢2018年的員工銷售額
+```SQL
+WITH cte_sales_amounts (staff, sales, year) AS (
+    SELECT    
+          -- first_name + ' ' + last_name AS staff,   -- SQite + 
+	    first_name || ' ' || last_name AS staff, -- SQlite 的連結字元
+        SUM(quantity * list_price * (1 - discount)) AS sales,
+        -- YEAR (order_date) year, -- SQL server
+	    -- EXTRACT(YEAR FROM order_date) year, -- PostgreSQL
+        -- DATE_PART('Year',order_date) year, -- PostgreSQL
+        STRFTIME('%Y', order_date) AS year -- sqlite
+    FROM    
+        sales_orders o
+    INNER JOIN sales_order_items i ON i.order_id = o.order_id
+    INNER JOIN sales_staffs s ON s.staff_id = o.staff_id
+    GROUP BY 
+        1, 3
+)
+SELECT
+    staff, 
+    sales
+FROM 
+    cte_sales_amounts
+WHERE
+  -- year = 2018; -- SQL Server, PostgresSQL
+    year = '2018'; -- SQLite
+```
+
+前面說明 GROUPING SET, CUBE, ROLLUP 時，先產生 sales_sales_summary 表格，然後再進行查尋，但可以將產生 sales_sales_summary 的 以CTE語法查詢。
+```SQL
+WITH  sales_sales_summary(brand,category,model_year,sales) AS (
+    SELECT
+       b.brand_name AS brand,
+       c.category_name AS category,
+       p.model_year,
+       round(
+              SUM ( quantity * i.list_price * (1 - discount)),0
+	        ) AS sales
+   FROM
+       sales_order_items i
+   INNER JOIN production_products p ON p.product_id = i.product_id
+   INNER JOIN production_brands b ON b.brand_id = p.brand_id
+   INNER JOIN production_categories c ON c.category_id = p.category_id
+   GROUP BY
+       b.brand_name,
+       c.category_name,
+       p.model_year
+   ORDER BY
+       b.brand_name,
+       c.category_name,
+       p.model_year
+	)
+SELECT
+    brand,
+    category,
+    SUM (sales) sales
+FROM
+    sales_sales_summary
+GROUP BY
+    CUBE(brand, category);
+```
+
+以下示例使用兩個 CTE cte_category_counts 和 cte_category_sales 返回每個產品類別的產品數量和銷售額。
+```SQL
+WITH cte_category_counts (
+    category_id, 
+    category_name, 
+    product_count
+)
+AS (
+    SELECT 
+        c.category_id, 
+        c.category_name, 
+        COUNT(p.product_id)
+    FROM 
+        production_products p
+        INNER JOIN production_categories c 
+            ON c.category_id = p.category_id
+    GROUP BY 
+        c.category_id, 
+        c.category_name
+),
+cte_category_sales(category_id, sales) AS (
+    SELECT    
+        p.category_id, 
+        SUM(i.quantity * i.list_price * (1 - i.discount))
+    FROM    
+        sales_order_items i
+        INNER JOIN production_products p 
+            ON p.product_id = i.product_id
+        INNER JOIN sales_orders o 
+            ON o.order_id = i.order_id
+    WHERE order_status = 4 -- completed
+    GROUP BY 
+        p.category_id
+) 
+SELECT 
+    c.category_id, 
+    c.category_name, 
+    c.product_count, 
+    s.sales
+FROM
+    cte_category_counts c
+    INNER JOIN cte_category_sales s 
+        ON s.category_id = c.category_id
+ORDER BY 
+    c.category_name;
+```
+
+### recursive CTE
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-recursive-cte/  
+
+遞歸 CTE 是引用自身的 CTE。  CTE 會重複執行、返回數據子集，直到返回完整的結果集。
+
+語法如下
+```SQL
+WITH expression_name (column_list)
+AS
+(
+    -- 初始查詢
+    initial_query  
+    UNION ALL
+    -- 引用 expression_name 的遞歸查詢。
+    recursive_query  
+)
+SELECT *
+FROM   expression_name
+```
+
+由最高階管理者（其manager_id為NULL）,查詢其直接及間接管理的所有員工
+```SQL
+-- WITH RECURSIVE cte_org AS ( -- PostgresSQL
+WITH cte_org AS (              --SQLite
+    SELECT       
+        staff_id, 
+        first_name,
+        manager_id      
+    FROM       
+        sales_staffs
+    WHERE manager_id IS NULL
+    UNION ALL
+    SELECT 
+        e.staff_id, 
+        e.first_name,
+        e.manager_id
+    FROM 
+        sales_staffs e
+        INNER JOIN cte_org o 
+            ON o.staff_id = e.manager_id
+)
+SELECT * FROM cte_org;
 ```
