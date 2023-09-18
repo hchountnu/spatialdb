@@ -1257,8 +1257,8 @@ SELECT * FROM cte_org;
 原SQL Server中，可使用 PIVOT指令。但SQLite及
 
 ### 使用 FILTER() 製作 pivot table
-https://antonz.org/sqlite-pivot-table/
-https://modern-sql.com/use-case/pivot
+https://antonz.org/sqlite-pivot-table/  
+https://modern-sql.com/use-case/pivot  
 這種方式適用於SQLite 及 PostgesSQL
 
 ```SQL
