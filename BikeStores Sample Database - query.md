@@ -1,12 +1,14 @@
 # SQL 使用
  **以bike store sales 資料為例**  
  
- **來源**  
+ **歐正資料來源**  
 > [SQL Server Sample Database](https://www.sqlservertutorial.net/sql-server-sample-database/)
 
-**修改**  
-> 原本資料有*product*及*sales*兩個schema, 改為不分schema。 
+**資料修改**  
+> - 整體修正：因SQLite 不支援多個scheam,原本資料有*product*及*sales*兩個schema, 改為不分schema。 
 因此table名稱，由*schema.table*改為*schema_table*
+> - 個別修正：各範例中個別以資料修改標示
+> - 課程所提供資料庫，已修改。
 
 
 ## Entity-Relationship Diagram
@@ -180,26 +182,48 @@ SELECT
 FROM
     sales_customers
 WHERE
-    -- last_name LIKE 'z%'
-	-- last_name LIKE '%er'
-	-- last_name LIKE 't%s'
-	-- last_name LIKE '[YZ]%'    -- SQite 不支此語法援
-	-- last_name LIKE '[A-E]%'   -- SQite 不支此語法援
-	-- last_name LIKE '[^A-X]%'  -- SQite 不支此語法援
+    --last_name LIKE 'z%'    -- SQlite 不分大小寫
+    -- last_name like 'Z%'   -- PostgresSQL 區分大小寫
+	-- last_name LIKE '%er'  
+	-- last_name LIKE 't%s'  -- SQlite 不分大小寫
+    -- last_name LIKE 'T%s'  -- PostgresSQL 區分大小寫
+    -- last_name SIMILAR TO  '[YZ]%' -- 使用regular expression, PostgresSQL 使用 SIMILAR TO
+	-- last_name LIKE '[YZ]%'    -- SQLite 不支reqular expression 語法
+    -- last_name SIMILAR TO '[A-E]%'   -- 使用regular expression, PostgresSQL 使用 SIMILAR TO
+	-- last_name LIKE '[^A-X]%'  -- SQLite 不支reqular expression 語法
 	-- first_name NOT LIKE 'A%'
 ORDER BY
     first_name;
 ```
 
+##  Alias
+
+表格及欄位可以別名取代
+
+欄位別名
 ```SQL
 SELECT
-    -- first_name + ' ' + last_name AS 'Full Name'   -- SQite + 
-	first_name || ' ' || last_name AS 'Full Name' -- SQlite 的連結字元
+    -- first_name + ' ' + last_name AS 'Full Name' --  SQL Server 使用 + 連結字串
+	first_name || ' ' || last_name AS "Full Name" -- SQlite 使用 || 連結字串字元
+	-- CONCAT(first_name, ' ', last_name) AS "Full name" -- PostgesSQL 使用CCONCAT 函數連結字串
 FROM
     sales_customers
 ORDER BY
     first_name;
 ```
+
+表格別名，通常用在查詢中使用兩個以上Table的情況。
+```SQL
+SELECT
+    c.customer_id,
+    first_name,
+    last_name,
+    order_id
+FROM
+    sales_customers c
+INNER JOIN sales_orders o ON o.customer_id = c.customer_id;
+```
+
 
 ## Joins
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-joins/
@@ -273,28 +297,33 @@ ORDER BY
 ### self join
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-self-join/
 
-
+在sales_staffs中的manager_id欄位該記載各員工的管理者的staff_id，使用self join 列出員工及管理者姓名。
 ```SQL
 SELECT
-    e.first_name || ' ' || e.last_name employee,
-    m.first_name || ' ' || m.last_name manager
+   -- CONCAT(e.first_name,' ',e.last_name)  employee, -- PostgreSQL
+   -- CONCAT(m.first_name,' ',m.last_name)  manager  -- PostgreSQL
+   e.first_name || ' ' || e.last_name employee,  -- SQLite
+   m.first_name || ' ' || m.last_name manager    -- SQLite
 FROM
     sales_staffs e
 LEFT JOIN sales_staffs m ON m.staff_id = e.manager_id
 ORDER BY
     manager;
 ```
-修正原本範例資料庫的資料錯誤，使用前先檢查，staff_id 為9,10的員工，其manager_id是否為8.
+
+----
+> #### 資料修改
+>  修正原本範例資料庫的資料錯誤，使用前先檢查，staff_id 為9,10的員工，其manager_id是否為8.
 ```SQL
 UPDATE sales_staffs 
 SET manager_id = 8
 WHERE staff_id > 8;
 ```
-
+----
 ### FULL JOIN
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-full-outer-join/
 
-原本FULL JOIN 範例是獨立於主要範例, 此處資料修改，以便融入主要範例中：將project manager設為主要範例中的有管理者身份員工。
+原本FULL JOIN 範例是獨立於主要範例, 此處資料修改，以便融入主要範例中：將project manager設為主要範例中的有管理者身份的員工。
 )
 - FULL JOIN
 ```SQL
@@ -329,7 +358,10 @@ FROM
         ON p.project_id = m.project_id;
 
 ```
-- 修改資料
+  
+----
+> #### 資料修改
+> 增加 pm_projects 及 pm_members 兩個資料表格
 ```SQL
 CREATE TABLE pm_projects(
     project_id INT PRIMARY KEY,
@@ -361,6 +393,7 @@ VALUES
     (5, 2),
     (8, NULL);
 ```
+----
 
 ### CROSS JOIN
 https://www.sqlservertutorial.net/sql-server-basics/sql-server-cross-join/ 
@@ -1093,7 +1126,8 @@ WHERE
     year = '2018'; -- SQLite
 ```
 
-前面說明 GROUPING SET, CUBE, ROLLUP 時，先產生 sales_sales_summary 表格，然後再進行查尋，但可以將產生 sales_sales_summary 的 以CTE語法查詢。
+前面說明 GROUPING SET, CUBE, ROLLUP 時，先產生 sales_sales_summary 表格，然後再進行查尋，但可以將產生 sales_sales_summary 的 以CTE語法查詢。 
+(SQLite 支援 CTE，但不支援 CUBE, 所以以下範例無法執行)
 ```SQL
 WITH  sales_sales_summary(brand,category,model_year,sales) AS (
     SELECT
@@ -1217,3 +1251,119 @@ WITH cte_org AS (              --SQLite
 )
 SELECT * FROM cte_org;
 ```
+
+## PIVOT
+樞紐分析是分組統計＋行轉列。
+原SQL Server中，可使用 PIVOT指令。但SQLite及
+
+### 使用 FILTER() 製作 pivot table
+https://antonz.org/sqlite-pivot-table/
+https://modern-sql.com/use-case/pivot
+這種方式適用於SQLite 及 PostgesSQL
+
+```SQL
+SELECT 
+    category_name, 
+    COUNT(product_id) product_count
+FROM 
+    production_products p
+    INNER JOIN production_categories c 
+        ON c.category_id = p.category_id
+GROUP BY 
+    category_name;
+```
+
+|  category_name      | product_count  |
+|         ----        |       ----:    |
+| Children Bicycles   |	      59       |
+| Comfort Bicycles    |	      30       |
+| Cruisers Bicycles   |	      78       |
+| Cyclocross Bicycles |       10       |
+| Electric Bikes	  |       24       |
+| Mountain Bikes	  |       60       |
+| Road Bikes	      |       60       |
+
+
+```SQL
+SELECT 
+    COUNT(product_id) filter(where category_name = 'Children Bicycles' ) as "Children Bicycles", 
+	COUNT(product_id) filter(where category_name = 'Comfort Bicycles' ) as "Comfort Bicycles",
+	COUNT(product_id) filter(where category_name = 'Cruisers Bicycles' ) as "Cruisers Bicycles",
+	COUNT(product_id) filter(where category_name = 'Cyclocross Bicycles' ) as "Cyclocross Bicycles",
+	COUNT(product_id) filter(where category_name = 'Electric Bikes' ) as "Electric Bikes",
+	COUNT(product_id) filter(where category_name = 'Mountain Bikes' ) as "Mountain Bikes",
+	COUNT(product_id) filter(where category_name = 'Road Bikes' ) as "Road Bikes"
+FROM 
+    production_products p
+    INNER JOIN production_categories c 
+        ON c.category_id = p.category_id;
+```
+
+ GROUP BY 替帶為多個 FILTER 達到轉軸效果。但必須手動輸入各篩選條件。
+ 
+ ```SQL
+SELECT 
+    model_year,
+    COUNT(product_id) filter(where category_name = 'Children Bicycles' ) as "Children Bicycles", 
+	COUNT(product_id) filter(where category_name = 'Comfort Bicycles' ) as "Comfort Bicycles",
+	COUNT(product_id) filter(where category_name = 'Cruisers Bicycles' ) as "Cruisers Bicycles",
+	COUNT(product_id) filter(where category_name = 'Cyclocross Bicycles' ) as "Cyclocross Bicycles",
+	COUNT(product_id) filter(where category_name = 'Electric Bikes' ) as "Electric Bikes",
+	COUNT(product_id) filter(where category_name = 'Mountain Bikes' ) as "Mountain Bikes",
+	COUNT(product_id) filter(where category_name = 'Road Bikes' ) as "Road Bikes"
+FROM 
+    production_products p
+    INNER JOIN production_categories c 
+        ON c.category_id = p.category_id
+GROUP BY model_year;		
+```
+
+|Children Bicycles |Comfort Bicycles|Cruisers Bicycles|Cyclocross Bicycles|Electric Bikes|Mountain Bikes|Road Bikes|
+|----:|----:|----:|----:|----:|----:|----:|----:|
+|59|30|78	|10|24 |60 |60|
+
+### 使用 CASE() 製作 pivot table
+這種方式適用於大多數資料庫
+
+GROUP BY 替帶為多個 CASE 達到轉軸效果。但必須手動輸入各篩選條件。
+
+```SQL
+SELECT 
+    COUNT(CASE WHEN category_name = 'Children Bicycles' THEN product_id END ) AS "Children Bicycles",
+	COUNT(CASE WHEN category_name = 'Comfort Bicycles' THEN product_id END ) AS "Comfort Bicycles",
+	COUNT(CASE WHEN category_name = 'Cruisers Bicycles' THEN product_id END ) AS "Cruisers Bicycles",
+	COUNT(CASE WHEN category_name = 'Cyclocross Bicycles' THEN product_id END ) AS "Cyclocross Bicycles",
+	COUNT(CASE WHEN category_name = 'Electric Bikes' THEN product_id END ) AS "Electric Bikes",
+	COUNT(CASE WHEN category_name = 'Mountain Bikes' THEN product_id END ) AS "Mountain Bikes",
+	COUNT(CASE WHEN category_name = 'Road Bikes' THEN product_id END ) AS "Road Bikes"
+FROM (
+    SELECT *
+    FROM
+    production_products p
+    INNER JOIN production_categories c 
+        ON c.category_id = p.category_id
+	) j;
+```
+
+分不同年代的車型的數量
+
+```SQL
+SELECT 
+    model_year,
+    COUNT(CASE WHEN category_name = 'Children Bicycles' THEN product_id END ) AS "Children Bicycles",
+	COUNT(CASE WHEN category_name = 'Comfort Bicycles' THEN product_id END ) AS "Comfort Bicycles",
+	COUNT(CASE WHEN category_name = 'Cruisers Bicycles' THEN product_id END ) AS "Cruisers Bicycles",
+	COUNT(CASE WHEN category_name = 'Cyclocross Bicycles' THEN product_id END ) AS "Cyclocross Bicycles",
+	COUNT(CASE WHEN category_name = 'Electric Bikes' THEN product_id END ) AS "Electric Bikes",
+	COUNT(CASE WHEN category_name = 'Mountain Bikes' THEN product_id END ) AS "Mountain Bikes",
+	COUNT(CASE WHEN category_name = 'Road Bikes' THEN product_id END ) AS "Road Bikes"
+FROM (
+    SELECT *
+    FROM
+    production_products p
+    INNER JOIN production_categories c 
+        ON c.category_id = p.category_id
+	) j
+GROUP BY model_year;	
+```
+
