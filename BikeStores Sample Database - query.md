@@ -1,9 +1,9 @@
 # SQL 使用
- **以bike store sales 資料為例**  
+ **以bike store sales 資料為例，並調整為Sqlite適用格式**  
  
- **歐正資料來源**  
+ **資料來源**  
 > [SQL Server Sample Database](https://www.sqlservertutorial.net/sql-server-sample-database/)
-
+ 
 **資料修改**  
 > - 整體修正：因SQLite 不支援多個scheam,原本資料有*product*及*sales*兩個schema, 改為不分schema。 
 因此table名稱，由*schema.table*改為*schema_table*
