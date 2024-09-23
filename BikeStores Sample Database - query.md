@@ -182,16 +182,16 @@ SELECT
 FROM
     sales_customers
 WHERE
-    --last_name LIKE 'z%'    -- SQlite 不分大小寫
+    -- last_name LIKE 'z%'    -- SQlite 不分大小寫
     -- last_name like 'Z%'   -- PostgresSQL 區分大小寫
-	-- last_name LIKE '%er'  
-	-- last_name LIKE 't%s'  -- SQlite 不分大小寫
+    -- last_name LIKE '%er'  
+    -- last_name LIKE 't%s'  -- SQlite 不分大小寫
     -- last_name LIKE 'T%s'  -- PostgresSQL 區分大小寫
     -- last_name SIMILAR TO  '[YZ]%' -- 使用regular expression, PostgresSQL 使用 SIMILAR TO
-	-- last_name LIKE '[YZ]%'    -- SQLite 不支reqular expression 語法
+    -- last_name LIKE '[YZ]%'    -- SQLite 不支reqular expression 語法
     -- last_name SIMILAR TO '[A-E]%'   -- 使用regular expression, PostgresSQL 使用 SIMILAR TO
-	-- last_name LIKE '[^A-X]%'  -- SQLite 不支reqular expression 語法
-	-- first_name NOT LIKE 'A%'
+    -- last_name LIKE '[^A-X]%'  -- SQLite 不支reqular expression 語法
+    -- first_name NOT LIKE 'A%'
 ORDER BY
     first_name;
 ```
