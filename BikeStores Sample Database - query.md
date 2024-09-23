@@ -5,7 +5,7 @@
 > [SQL Server Sample Database](https://www.sqlservertutorial.net/sql-server-sample-database/)
  
 **資料修改**  
-> - 整體修正：因SQLite 不支援多個scheam,原本資料有*product*及*sales*兩個schema, 改為不分schema。 
+> - 整體修正：因SQLite 不支援多個schema,原本資料有*product*及*sales*兩個schema, 改為不分schema。 
 因此table名稱，由*schema.table*改為*schema_table*
 > - 個別修正：各範例中個別以資料修改標示
 > - 課程所提供資料庫，已修改。
