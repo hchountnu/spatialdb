@@ -263,6 +263,7 @@ SELECT
 FROM
     production_products p
 LEFT JOIN sales_order_items o ON o.product_id = p.product_id
+-- LEFT OUTER JOIN sales_order_items o ON o.product_id = p.product_id  -- 意義同上　
 ORDER BY
     order_id;
 ```
