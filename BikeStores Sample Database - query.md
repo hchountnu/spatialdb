@@ -165,7 +165,7 @@ SELECT
 FROM
     sales_orders
 WHERE
-    order_date BETWEEN '20170115' AND '20170117'
+    order_date BETWEEN '2017-01-15' AND '2017-01-17'
 ORDER BY
     order_date;
 ```
