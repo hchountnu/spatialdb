@@ -197,6 +197,7 @@ ORDER BY
 ```
 
 ##  Alias
+https://www.sqlservertutorial.net/sql-server-basics/sql-server-alias/
 
 表格及欄位可以別名取代
 
