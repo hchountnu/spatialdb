@@ -16,9 +16,10 @@
 
 
 # SQL SELECT 語法
-- [SQite SELECT 語法](https://www.sqlite.org/lang_select.html)
-- [PostgresSQL SELECT 語法](https://docs.postgresql.tw/reference/sql-commands/select)
-  - [PostgresSQL SELECT 教學](https://docs.postgresql.tw/reference/sql-commands/select)
+- [SQite SELECT 語法](https://www.sqlite.org/lang_select.html) 
+- [PostgresSQL SELECT 語法](https://docs.postgresql.tw/reference/sql-commands/select) [English](https://www.postgresql.org/docs/current/sql-select.html)
+  - [新手教學 SQL查詢語言](https://docs.postgresql.tw/tutorial/the-sql-language) [English](https://www.postgresql.org/docs/current/tutorial-sql.html)
+  - [PostgresSQL 使用手冊 查詢查詢 ](https://docs.postgresql.tw/the-sql-language/queries) [English](https://www.postgresql.org/docs/current/queries.html)
 
 
 ## SELECT
