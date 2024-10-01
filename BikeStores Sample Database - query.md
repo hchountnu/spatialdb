@@ -206,7 +206,7 @@ https://www.sqlservertutorial.net/sql-server-basics/sql-server-alias/
 SELECT
     -- first_name + ' ' + last_name AS 'Full Name' --  SQL Server 使用 + 連結字串
 	first_name || ' ' || last_name AS "Full Name" -- SQlite 及 PostgesSQL使用 || 連結字串字元
-	-- CONCAT(first_name, ' ', last_name) AS "Full name" -- PostgesSQL 使用CCONCAT 函數連結字串
+    -- CONCAT(first_name, ' ', last_name) AS "Full name" -- PostgesSQL 使用CCONCAT 函數連結字串
 FROM
     sales_customers
 ORDER BY
