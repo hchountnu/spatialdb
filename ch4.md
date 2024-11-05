@@ -2,6 +2,12 @@
  
 **朱选, 刘素霞 (2006)地理信息系统原理与技术 华东师范大学出版社**
 
+以下以SQL作為操作語言。
+- QGIS中應用資料庫，參見[QGIS Browser panel](https://docs.qgis.org/3.34/en/docs/user_manual/introduction/browser.html) 及 [Using Spatial Databases in QGIS](https://docs.qgis.org/3.34/en/docs/training_manual/databases/index.html)。QGIS 可透過 [DB Manager Plugin](https://docs.qgis.org/3.34/en/docs/user_manual/plugins/core_plugins/plugins_db_manager.html)使用SQL。
+- ArcGIS Pro 中應用資料庫系統參見 [Databases and ArcGIS](https://pro.arcgis.com/en/pro-app/latest/help/data/databases/databases-and-arcgis.htm) ArcGIS 不直接支援SQL。
+
+
+
 ## 建立 ***住宅***、***住戶*** 、***戶主*** 表格 
 
 ```SQL
@@ -263,47 +269,59 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_GeomFromText('POINT(34
                            (715,'湖南54號',ST_GeomFromText('POINT(340000 3431500)',32651));
 ```
 
-# # 建立 ***學校***、***住宅樓***  Spatialite 空間表格
+## 建立 ***學校***、***住宅樓***  Spatialite 空間表格
+
+### Sqlite 的編碼
+- sqlite 及 spatialite 資料庫預設編碼為 UTF-8  
+- 中文 window 作業系統 Windows 10 1909 之前的版本，預設為 BIG5編碼。和許多軟體預設編碼不同，因此容易造成衝突。
+- Spatialite/Sqlite 的 shell 版本，window命令視窗 受作業系統編碼影響。
+- windows10 1909以後及Window 11,雖然系統預設為UTF-8,但Sqlite 仍不能使用中文,需改為英文
+- Spatialite 中文輸入時，有時會亂碼。需使用 " " quote 名稱。
+- spatialite-gui 及 DB Browser for Sqlite, Dbeaver 等client 以 UTF-8 為預設編碼。所以可以輸入UTF-8編碼。
 
 ```SQL
--- =================================================
--- 使用 SQL client 的編碼說明
--- sqlite 及 spatialite 資料庫預設編碼為 UTF-8
--- 中文 window 作業系統 Windows 10 1909 之前的版本，預設為 BIG5編碼。和許多軟體預設編碼不同，因此容易造成衝突。
--- Spatialite/Sqlite 的 shell 版本，window命令視窗 受作業系統編碼影響，Sqlite 不能使用中文,需改為英文
--- 使用powershell SQLite 可使用 UTF-8中文, 但Spatialite中文輸入時，不會呈現亂碼，但仍無法正確執行。
--- spatialite-gui 及 DB Browser for Sqlite, Dbeaver 等client 以 UTF-8 為預設編碼。所以可以輸入UTF-8編碼。
-
--- spatilite 設定使用內碼
+-- sqlite,spatilite 設定使用內碼
 PRAGMA encoding = "UTF-8";
--- spatilite 查詢資料庫內碼
-PRAGMA encoding
--- sptailite . command 設定內碼
-.charset utf-8
+-- 詢資料庫內碼
+PRAGMA encoding;
+```
+### 載入 Spatiate plugin
+ Dbeaver 為 java 開發，無法使用winsows 的dll plugin mod_spatialite.dll   
+ Sqlite 使用 .command 載入 mod_spatialite.dll
 
--- =========================================================================================
--- Spatiate plugin 的載入。
--- Dbeaver 為 java 開發，無法使用 mod_spatialite.dll plugin
--- Sqlite 可載入 mod_spatialite.dll或
--- .load mod_spatialite
--- 或 SQL 指令
+```SQL
+.load mod_spatialite
+```
+ 或使用 SQL 指令
+```SQL
 SELECT load_extension('mod_spatialite.dll'); 
+```
+#### 啟用 spatialite plugin 
 
--- 產生 spatial database 的結構
--- http://www.gaia-gis.it/gaia-sins/spatialite-cookbook/html/metadata.html
--- spatialite_gui will automatically perform any required initialization task every time a new database is created:
--- so (using spatialite_gui) there is no need at all to explicitly call this function.
--- 啟動 sptailite 使用 ch4.spatialite， 會自動產生 sptialite 相關 table
--- spatialite ch4.spatialite
+載入後，再啟用spatialite plugin，將 產生 spatial database 的結構 
+-- http://www.gaia-gis.it/gaia-sins/spatialite-cookbook/html/metadata.html  
+spatialite 及 spatialite_gui 建立新資料庫時，都會自動執行任何所需的初始化任務。所以不需要明確呼叫。
+QGIS或ArcGIS 也會自動進行必要初始化。
 
+``` SQL
+spatialite ch4.spatialite
+```
+```SQL
 --  sqlite client 載入plugin 後, 需手動啟動。
 SELECT InitSpatialMetaData(); -- sqlite 非常慢
 
+-- 查詢 spatialite 啟動後，產生哪些table
+.tables
+
 -- DB Browser for Sqlite 可載入 mod_spatialite.dll plugin, 但無法正確建立空間資料表結構。
+```
 
--- 目前中文window中，建立 spatialite 最佳方案為使用 spatialite_gui
--- 或使用QGIS或ArcGIS
+- QGIS  使用 SpatiaLite 參見 [Working with SpatiaLite databases in QGIS](https://docs.qgis.org/3.34/en/docs/training_manual/databases/spatialite.html) 
 
+- ArcGIS Pro 製作Spatialite 資料庫，參見 [Create SQLite Database](https://pro.arcgis.com/en/pro-app/latest/tool-reference/data-management/create-sqlite-database.htm)
+
+### 定義表格
+```SQL
 -- spatialite and postgis 定義表格，先定義無空間屬性表個，然後加上空間表格
 -- 先定義沒有空間 geometry的表格
 CREATE TABLE IF NOT EXISTS "學校" (
@@ -319,7 +337,7 @@ CREATE TABLE IF NOT EXISTS "住宅樓" (
 	"地址"	VARCHAR(100)
 );
 
--- 使用 AddGeometryColumn() 才可真正成功產生 空間表格。
+-- 使用 AddGeometryColumn() 建立空間表格。
 -- https://postgis.net/docs/AddGeometryColumn.html
 -- 
 -- 建立geomtray 欄位時需設定投影
@@ -342,16 +360,65 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_GeomFromText('POINT(34
 
 ```
 
-# spatial query
+
+## 建立Duck 空間資料
+
+DuckDB 空間資料參見 [DuckDB Spatial Extension](https://duckdb.org/docs/extensions/spatial/overview.html)
 
 ```SQL
--- spatialite 讀取 geopackage 格式 需先起啟用 EnableGpkgAmphibiousMode()、才能讀取空間資料
-select EnableGpkgAmphibiousMode();
--- geomtry 
 
---PostGIS
+-- 啟動資料庫
+INSTALL spatial;
+LOAD spatial;
+
+-- 建立表格
+CREATE TABLE 學校(
+	名稱 VARCHAR(40) PRIMARY KEY,
+	地址 VARCHAR(100),
+	教師人數 INT,
+	學生人數 INT,
+	幾何形體 geometry);
+	
+CREATE TABLE 住宅樓(
+	樓號 INT,
+	地址 VARCHAR(100),
+	幾何形體 geometry,
+	PRIMARY KEY (樓號,地址));
+
+-- 插入資料
+INSERT INTO "學校" VALUES ('華英中學','東方路10號',200,1800,ST_POINT(341845,3431829)),
+                         ('東風小學','鼓樓路350號',150,1000,ST_POINT(339000,3432300)),
+                         ('南洋中學','烏吉路1010號',100,1200,ST_POINT(343000,3430200));
+
+INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_POINT(341816,3431000)),
+                           (205,'上海路30號',ST_POINT(342000,3430500)),
+                           (715,'湖南54號',ST_POINT(340000,3431500));
+
+```
+
+
+# spatial query
+
+spatialite 除了可查詢本身的空間資料外，也可使用 geopackage 格式的空間資料，但需先起啟用 EnableGpkgAmphibiousMode()、才能讀取空間資料。
+
+- QGIS 使用 Browser panel
+
+```SQL
+-- for Spatialite
+select EnableGpkgAmphibiousMode();
+```
+```SQL
+
 SELECT Find_SRID('public','住宅樓','幾何形體'); --PostGIS only
 SELECT ST_Srid(幾何形體) FROM 住宅樓;
+
+--  學校和住宅距離
+SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址, 
+       學校.名稱 AS 學校名稱, 學校.地址 AS 學校地址,
+	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體)  AS 距離
+FROM  住宅樓
+CROSS JOIN  學校
+ORDER BY 住宅樓.樓號, 距離;
 
 -- 住宅到學校距離
 SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址, 
@@ -359,32 +426,33 @@ SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址,
 	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體) AS 距離
 FROM 住宅樓, 學校
 WHERE 住宅樓.地址 = '南洋大道101C' AND
-      學校.名稱 = '華英中學'
+      學校.名稱 = '華英中學';
 
--- 住宅到學校距離,並選出住宅幾何，可輸出為幾何物件
+-- 住宅到學校距離,並輸出為連線幾何物件
 SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址, 
        學校.名稱 AS 學校名稱, 學校.地址 AS 學校地址, 
-	   住宅樓.幾何形體 As geom,
-	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體) AS 距離
-FROM 住宅樓, 學校
-
-SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址, 
-       學校.名稱 AS 學校名稱, 學校.地址 AS 學校地址,
-	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體) AS 距離
-FROM 住宅樓, 學校
-WHERE 住宅樓.地址 = '南洋大道101C' AND
-      學校.名稱 = '華英中學'
-	  
-
---  學校和住宅距離
-SELECT 住宅樓.樓號, 住宅樓.地址 AS 住宅地址, 
-       學校.名稱 AS 學校名稱, 學校.地址 AS 學校地址,
-	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體)  AS 最近學校距離
-FROM
-    住宅樓
+	   ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體) AS 距離,
+	 --St_MakeLine(住宅樓.幾何形體,學校.幾何形體 )As line -- for PostGIS, duckdb
+	 --MakeLine(住宅樓.幾何形體,學校.幾何形體 )As line    -- for Spatialite
+FROM 住宅樓
 CROSS JOIN  學校
-ORDER BY 住宅樓.樓號, 最近學校距離
+ORDER BY 住宅樓.樓號, 距離; 
 
+-- 找到每個住宅樓最近的學
+-- SQL WINDOW function 可參考 https://haosquare.com/sql-window-function-intro/
+SELECT * 
+FROM (
+     SELECT 樓號, 住宅地址, 學校名稱, 學校地址,	距離,
+	        RANK() OVER (PARTITION BY 樓號, 住宅地址 ORDER BY 距離) as 遠近  -- SQL WINDOW function
+     FROM 
+         (
+		  SELECT 住宅樓.樓號 as 樓號, 住宅樓.地址 AS 住宅地址, 
+                 學校.名稱 AS 學校名稱, 學校.地址 AS 學校地址,
+	             ST_DISTANCE(住宅樓.幾何形體,學校.幾何形體)  AS 距離
+          FROM  住宅樓
+          CROSS JOIN  學校)  AS r1
+	  )  AS r2 
+WHERE 遠近 = 1; 
 
 -- 列出坐標位置 spatialite
 SELECT 樓號, 地址, ASTEXT(幾何形體) AS 位置
@@ -394,20 +462,29 @@ FROM 住宅樓;
 SELECT 名稱, 地址, ST_ASTEXT(幾何形體) AS 位置
 FROM 學校;
 
--- buffer
+-- BUFFER 產生學區
+SELECT "名稱", "地址", ST_BUFFER(幾何形體,1000) AS "學區"
+FROM "學校";
 
-SELECT 名稱, 地址, ST_BUFFER(幾何形體,1000) AS 學區
-FROM 學校;
+SELECT "名稱", "地址", ST_ASTEXT(ST_BUFFER(幾何形體,1000)) AS "學區"
+FROM "學校";
 
 -- 學區內住宅
 SELECT 學校.名稱 AS 學校名稱,住宅樓.地址 AS 住宅地址
 FROM 學校,住宅樓
 WHERE ST_Within(住宅樓.幾何形體,ST_BUFFER(學校.幾何形體,1500));
 -- OR
+SELECT "學校"."名稱" AS "學校名稱","住宅樓"."地址" AS "住宅地址"
+FROM "學校" 
+CROSS JOIN  "住宅樓"
+WHERE ST_Within(住宅樓.幾何形體,ST_BUFFER(學校.幾何形體,1500));
+-- OR
 SELECT 學校.名稱 AS 學校名稱,住宅樓.地址 AS 住宅地址
 FROM 學校
-join 住宅樓
-on ST_Within(住宅樓.幾何形體,ST_BUFFER(學校.幾何形體,1500));
+JOIN 住宅樓
+ON ST_Within(住宅樓.幾何形體,ST_BUFFER(學校.幾何形體,1500));
+
+```
 
 
 
