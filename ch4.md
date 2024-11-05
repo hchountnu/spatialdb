@@ -397,7 +397,7 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_POINT(341816,3431000))
 ```
 
 
-# spatial query
+## spatial query
 
 spatialite 除了可查詢本身的空間資料外，也可使用 geopackage 格式的空間資料，但需先起啟用 EnableGpkgAmphibiousMode()、才能讀取空間資料。
 
