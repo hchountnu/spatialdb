@@ -269,7 +269,7 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_GeomFromText('POINT(34
                            (715,'湖南54號',ST_GeomFromText('POINT(340000 3431500)',32651));
 ```
 
-## 建立 ***學校***、***住宅樓***  Spatialite 空間表格
+# 建立 ***學校***、***住宅樓***  Spatialite 空間表格
 
 ### Sqlite 的編碼
 - sqlite 及 spatialite 資料庫預設編碼為 UTF-8  
@@ -361,7 +361,7 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_GeomFromText('POINT(34
 ```
 
 
-## 建立Duck 空間資料
+# 建立Duck 空間資料
 
 DuckDB 空間資料參見 [DuckDB Spatial Extension](https://duckdb.org/docs/extensions/spatial/overview.html)
 
