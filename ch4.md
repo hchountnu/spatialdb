@@ -172,9 +172,9 @@ INSERT INTO 住戶 (住戶編號, 戶主編號, 家庭人口, 住宅編號, 住�
 
 ```
 
-## 建立 ***學校***、***住宅樓***  PostGIS 空間表格
+# 建立 ***學校***、***住宅樓***  PostGIS 空間表格
 
-### 建立資料庫
+## 建立資料庫
 
 可在同一Postgres的任一資料庫中執行，需要管理權限  
 
@@ -361,15 +361,27 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_GeomFromText('POINT(34
 ```
 
 
-## 建立Duck 空間資料
+## 建立DuckDB 空間資料
 
-DuckDB 空間資料參見 [DuckDB Spatial Extension](https://duckdb.org/docs/extensions/spatial/overview.html)
+[DuckDB](https://duckdb.org/) 
+- [DuckDB Spatial 說明文件]
+  - [DuckDB Spatial Extension 說明文件](https://duckdb.org/docs/extensions/spatial/overview.html)
+- [GDAL Vector Drivers 說明文件](https://gdal.org/en/latest/drivers/vector/index.html#vector-drivers)
+
+資料來源：[GitHub - hchountnu/spatialdb](https://github.com/hchountnu/spatialdb)
 
 ```SQL
 
--- 啟動資料庫
-INSTALL spatial;
+-- 查詢DuckDB extension
+SELECT *
+FROM duckdb_extensions();
+
+-- 啟動DuckDB spatial extension
+INSTALL spatial; -- 僅需執行一次
 LOAD spatial;
+
+-- 測試空間功能
+SELECT ST_POINT(121.52662762238074,25.024985016796563) 教室位置;
 
 -- 建立表格
 CREATE TABLE 學校(
@@ -395,9 +407,121 @@ INSERT INTO "住宅樓" VALUES (103,'南洋大道101C',ST_POINT(341816,3431000))
                            (715,'湖南54號',ST_POINT(340000,3431500));
 
 ```
+### 使用csv 資料
+
+- 學校.CSV
+```csv
+"名稱","地址","教師人數","學生人數","long","lat","geom"
+華英中學,東方路10號,200,1800,121.3432834387615,31.00946430365703,POINT(121.3432834387615 31.00946430365703)
+東風小學,鼓樓路350號,150,1000,121.31341729800188,31.01332659699219,POINT(121.31341729800188 31.01332659699219)
+南洋中學,烏吉路1010號,100,1200,121.35563037769106,30.994926211784282,POINT(121.35563037769106 30.994926211784282)
+```
+- 住宅樓.CSV
+```
+"樓號","地址","long","lat","geom"
+103,南洋大道101C,121.34310911481839,31.00198329777303,POINT(121.34310911481839 31.00198329777303)
+205,上海路30號,121.34511363627745,30.997498285331968,POINT(121.34511363627745 30.997498285331968)
+715,湖南54號,121.32401544764056,31.00624753599756,POINT(121.32401544764056 31.00624753599756)
+```
 
 
-## spatial query
+```SQL
+-- 硬碟讀取
+SELECT * FROM 'D:/class/spatiaDB/關連式資料庫範例（朱選）/學校.csv';
+-- 網址讀取
+SELECT * FROM 'https://raw.githubusercontent.com/hchountnu/spatialdb/refs/heads/main/學校.csv';
+
+-- 由 CSV 產生新表格
+CREATE TABLE 學校 AS
+SELECT * FROM 'E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/學校.csv'
+
+-- 產生 point geometry 的方法
+SELECT 名稱,地址,教師人數,學生人數, ST_POINT(long,lat) 
+FROM 學校;
+
+SELECT 名稱,地址,教師人數,學生人數, ST_GeomFromText(geom) 
+FROM 學校;
+
+SELECT 名稱,地址,教師人數,學生人數, ST_GeomFromText( 'POINT('||long||' '||lat||')') 
+FROM 學校;
+
+-- 增加 geometry field
+ALTER TABLE 學校 ADD COLUMN 幾何形體 GEOMETRY;
+
+UPDATE 學校 SET 幾何形體 = st_point(long,lat)
+WHERE TRUE;
+
+-- 將 EPGS 4326 WGS84 經緯度，轉換 EPSG 32651 UTM 座標，
+-- 必須注意 WGS84的原始定義中，採用 (lat long), 在st_transform 中，必須說明輸入為 (long,lat)格式。因此最後的 TURE 指是 always_xy 為 TRUE。參見 https://duckdb.org/docs/extensions/spatial/functions#st_transform
+UPDATE 學校 SET 幾何形體 = st_transform(st_point(long,lat),'EPSG:4326','EPSG:32651',TRUE)
+WHERE TRUE;
+
+-- 使用 GDAL 讀入空間資料
+-- 查詢支援的 GDAL 驅動程式和檔案格式的清單
+SELECT  *
+FROM ST_Drivers();
+
+-- ST_READ() 讀入空間資料
+-- 根據檔名，自動選取適當讀入方法。此例自動選擇讀取shappe 格式。 
+-- Duckdb 沒有包含 iconv，僅支援 UTF-8 encoding
+SELECT  *
+FROM 'E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/住宅樓.shp';
+SELECT  *
+FROM 'E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/學校.shp';
+
+
+-- OR 指定用 ST_READ() 讀取空間資料，副檔名.shp, 則自動選擇shape格式。
+SELECT * 
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/住宅樓.shp');
+
+SELECT * 
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/學校.shp');
+
+-- 將shp等相關檔壓縮成zip後，成shp.zip 後讀取
+
+-- 住宅樓的 URL encode為 %E4%BD%8F%E5%AE%85%E6%A8%93
+SELECT *
+FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/%E4%BD%8F%E5%AE%85%E6%A8%93.shp.zip');
+
+
+-- 學校.shp.zip 的URL encode為 %E5%AD%B8%E6%A0%A1
+SELECT *
+FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/%E5%AD%B8%E6%A0%A1.shp.zip');
+
+
+-- OR 用 ST_READ() 讀取空間資料，副檔名.gpkg, 則自動選擇GeoPackage格式。
+SELECT *
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/ch4.gpkg',layer='住宅樓');
+
+SELECT *
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/ch4.gpkg',layer='學校');
+
+SELECT *
+FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/ch4.gpkg',layer='住宅樓');
+
+SELECT *
+FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/ch4.gpkg',layer='學校');
+
+
+-- OR 讀入geojson 檔案
+SELECT *
+FROM  'https://raw.githubusercontent.com/hchountnu/spatialdb/refs/heads/main/%E5%AD%B8%E6%A0%A1.geojson'
+
+
+-- 利用讀入資料，產生新TABLE
+CREATE TABLE 住宅樓 AS
+SELECT * 
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/ch4.gpkg',layer='住宅樓');
+
+CREATE TABLE 學校 AS
+SELECT * 
+FROM ST_READ('E:/research/授課/地理資訊/素材/關連式資料庫範例（朱選）/ch4.gpkg',layer='學校');
+
+
+```
+
+
+# spatial query
 
 spatialite 除了可查詢本身的空間資料外，也可使用 geopackage 格式的空間資料，但需先起啟用 EnableGpkgAmphibiousMode()、才能讀取空間資料。
 
@@ -462,6 +586,10 @@ FROM 住宅樓;
 SELECT 名稱, 地址, ST_ASTEXT(幾何形體) AS 位置
 FROM 學校;
 
+-- 轉換為WGS84,並列出經度及緯度，以便於轉成CSV檔案
+select 名稱, 地址, 教師人數, 學生人數, st_x(st_transform(幾何形體, 4326)) as long, st_y(st_transform(幾何形體, 4326)) as lat
+from 學校;
+
 -- BUFFER 產生學區
 SELECT "名稱", "地址", ST_BUFFER(幾何形體,1000) AS "學區"
 FROM "學校";
@@ -483,13 +611,5 @@ SELECT 學校.名稱 AS 學校名稱,住宅樓.地址 AS 住宅地址
 FROM 學校
 JOIN 住宅樓
 ON ST_Within(住宅樓.幾何形體,ST_BUFFER(學校.幾何形體,1500));
-
-```
-
-
-
-```
-
-
 
 ```
