@@ -502,12 +502,6 @@ FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/ch4.gpk
 SELECT *
 FROM ST_READ('https://github.com/hchountnu/spatialdb/raw/refs/heads/main/ch4.gpkg',layer='學校');
 
-
--- OR 讀入geojson 檔案
-SELECT *
-FROM  'https://raw.githubusercontent.com/hchountnu/spatialdb/refs/heads/main/%E5%AD%B8%E6%A0%A1.geojson'
-
-
 -- 利用讀入資料，產生新TABLE
 CREATE TABLE 住宅樓 AS
 SELECT * 
