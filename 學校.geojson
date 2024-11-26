@@ -1,0 +1,10 @@
+{
+"type": "FeatureCollection",
+"name": "學校",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "fid": 1, "名稱": "華英中學", "地址": "東方路10號", "教師人數": 200, "學生人數": 1800 }, "geometry": { "type": "Point", "coordinates": [ 121.343283438761503, 31.009464303657037 ] } },
+{ "type": "Feature", "properties": { "fid": 2, "名稱": "東風小學", "地址": "鼓樓路350號", "教師人數": 150, "學生人數": 1000 }, "geometry": { "type": "Point", "coordinates": [ 121.31341729800188, 31.01332659699219 ] } },
+{ "type": "Feature", "properties": { "fid": 3, "名稱": "南洋中學", "地址": "烏吉路1010號", "教師人數": 100, "學生人數": 1200 }, "geometry": { "type": "Point", "coordinates": [ 121.355630377691057, 30.994926211784289 ] } }
+]
+}
